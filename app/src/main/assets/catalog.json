@@ -1,0 +1,83 @@
+[
+  {
+    "packageName": "com.mtrx.office.text",
+    "name": "MTRX Document Studio",
+    "description": "Professional document creation, publishing and typography system. Built with modern styling, offline air-gapped security, citation formatting, and executive summary generation.",
+    "shortDescription": "Next-gen typography and document editorial workspace",
+    "iconUrl": "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/icons/document_studio.png",
+    "screenshots": [
+      "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/screenshots/doc_1.png",
+      "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/screenshots/doc_2.png",
+      "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/screenshots/doc_3.png"
+    ],
+    "category": "Productivity",
+    "versionName": "2.5.0",
+    "versionCode": 250,
+    "apkUrl": "https://github.com/MarapathranGroups/MTRX-Store-Catalog/releases/download/v2.5.0/MTRX-Document-Studio-v2.5.0.apk",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sizeBytes": 24500000,
+    "changelog": "• Enhanced typography rendering engine\n• Offline citation & bibliography manager\n• Real-time diff engine improvements",
+    "minSdk": 26,
+    "updatedAt": "2026-11-20T10:00:00Z"
+  },
+  {
+    "packageName": "com.mtrx.office.vision",
+    "name": "MTRX Vision Studio",
+    "description": "Professional presentation design, visual communication and storytelling platform. Direct click-and-type in-slide canvas, motion sequencing timeline, and presenter intelligence.",
+    "shortDescription": "Cinematic presentation design & visual storytelling",
+    "iconUrl": "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/icons/vision_studio.png",
+    "screenshots": [
+      "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/screenshots/vision_1.png",
+      "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/screenshots/vision_2.png"
+    ],
+    "category": "Creativity",
+    "versionName": "2.5.0",
+    "versionCode": 250,
+    "apkUrl": "https://github.com/MarapathranGroups/MTRX-Store-Catalog/releases/download/v2.5.0/MTRX-Vision-Studio-v2.5.0.apk",
+    "sha256": "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
+    "sizeBytes": 28100000,
+    "changelog": "• Motion timeline entrance animations\n• High-fidelity 16:9 canvas layout\n• Presenter mode with live laser and pen tools",
+    "minSdk": 26,
+    "updatedAt": "2026-11-19T14:30:00Z"
+  },
+  {
+    "packageName": "com.mtrx.office.grid",
+    "name": "MTRX Grid Pro",
+    "description": "High-performance financial modeling and intelligent data grid platform. Sub-millisecond calculation engine, complex formula parser, and dynamic charting.",
+    "shortDescription": "High-speed financial modeling & data grid",
+    "iconUrl": "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/icons/grid_pro.png",
+    "screenshots": [
+      "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/screenshots/grid_1.png",
+      "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/screenshots/grid_2.png"
+    ],
+    "category": "Productivity",
+    "versionName": "2.5.0",
+    "versionCode": 250,
+    "apkUrl": "https://github.com/MarapathranGroups/MTRX-Store-Catalog/releases/download/v2.5.0/MTRX-Grid-Pro-v2.5.0.apk",
+    "sha256": "ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d",
+    "sizeBytes": 21800000,
+    "changelog": "• Sub-second formula recalculation cycle\n• Enhanced CSV and spreadsheet export\n• Modern dark theme high-contrast grid",
+    "minSdk": 26,
+    "updatedAt": "2026-11-18T09:15:00Z"
+  },
+  {
+    "packageName": "com.mtrx.store",
+    "name": "MTRX Store",
+    "description": "Official independent application marketplace for MTRX Tech ecosystem. Direct APK distribution, SHA-256 verification, background update checks, and secure offline caching.",
+    "shortDescription": "Independent App Store for MTRX Ecosystem",
+    "iconUrl": "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/icons/store.png",
+    "screenshots": [
+      "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/screenshots/store_1.png",
+      "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/screenshots/store_2.png"
+    ],
+    "category": "Utilities",
+    "versionName": "1.0.1",
+    "versionCode": 2,
+    "apkUrl": "https://github.com/MarapathranGroups/MTRX-Store-Catalog/releases/download/v1.0.1/MTRX-Store-v1.0.1.apk",
+    "sha256": "c5f949c5e2193b21c43555ae3ee1a22be1b54a2e5d165f4d2f627b0b2e84d4b1",
+    "sizeBytes": 16200000,
+    "changelog": "• Self-update engine enhancements\n• Background periodic update checks\n• Faster SHA-256 hash streaming verification",
+    "minSdk": 26,
+    "updatedAt": "2026-11-21T18:00:00Z"
+  }
+]

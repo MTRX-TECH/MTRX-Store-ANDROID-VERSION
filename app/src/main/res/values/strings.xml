@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MTRX Store</string>
+    <string name="channel_updates_name">MTRX App Updates</string>
+    <string name="channel_updates_desc">Notifications for available app updates</string>
+    <string name="channel_downloads_name">MTRX Downloads</string>
+    <string name="channel_downloads_desc">Download and install progress notifications</string>
+</resources>
