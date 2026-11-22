@@ -135,6 +135,12 @@ fun MainAppScaffold(
                 HomeScreen(
                     onAppClick = { packageName ->
                         navController.navigate(Screen.AppDetail.createRoute(packageName))
+                    },
+                    onProfileClick = {
+                        navController.navigate(Screen.Settings.route)
+                    },
+                    onNavigateToUpdates = {
+                        navController.navigate(Screen.Updates.route)
                     }
                 )
             }

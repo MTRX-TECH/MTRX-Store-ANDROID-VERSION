@@ -24,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,11 +52,11 @@ fun AppCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = Color(0xFF13141B)
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MtrxDarkBorder)
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF22242F))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -67,8 +69,8 @@ fun AppCard(
                     contentDescription = app.name,
                     modifier = Modifier
                         .size(56.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MtrxDarkBorder),
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF1B1C25)),
                     contentScale = ContentScale.Crop
                 )
 
@@ -155,15 +157,24 @@ fun ActionButton(
         is AppStatus.NotInstalled -> {
             Button(
                 onClick = onActionClick,
-                colors = ButtonDefaults.buttonColors(containerColor = MtrxGold),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 shape = RoundedCornerShape(20.dp),
-                modifier = modifier.height(34.dp)
+                modifier = modifier
+                    .height(34.dp)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            listOf(Color(0xFFE5A93C), Color(0xFFF4C563), Color(0xFFC78824))
+                        ),
+                        shape = RoundedCornerShape(20.dp)
+                    )
             ) {
                 Text(
                     text = "Get",
-                    color = MaterialTheme.colorScheme.surface,
+                    color = Color.Black,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
         }

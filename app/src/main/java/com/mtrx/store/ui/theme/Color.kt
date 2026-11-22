@@ -3,17 +3,17 @@ package com.mtrx.store.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // MTRX Gold & Obsidian Palette
-val MtrxGold = Color(0xFFD4AF37)
-val MtrxGoldLight = Color(0xFFF3E5AB)
-val MtrxGoldDark = Color(0xFFAA820A)
+val MtrxGold = Color(0xFFE5A93C)
+val MtrxGoldLight = Color(0xFFF5C767)
+val MtrxGoldDark = Color(0xFFBD821E)
 val MtrxGoldContainer = Color(0xFF2C240E)
 
-val MtrxDarkBg = Color(0xFF090A0E)
-val MtrxDarkSurface = Color(0xFF12131A)
-val MtrxDarkCard = Color(0xFF191B24)
-val MtrxDarkBorder = Color(0xFF282B37)
+val MtrxDarkBg = Color(0xFF090A0D)
+val MtrxDarkSurface = Color(0xFF101117)
+val MtrxDarkCard = Color(0xFF13141B)
+val MtrxDarkBorder = Color(0xFF22242F)
 
-val TextPrimaryDark = Color(0xFFF3F4F6)
+val TextPrimaryDark = Color(0xFFFFFFFF)
 val TextSecondaryDark = Color(0xFF9CA3AF)
 val TextTertiaryDark = Color(0xFF6B7280)
 

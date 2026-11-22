@@ -390,15 +390,22 @@ fun PrimaryActionButton(
                 onClick = onClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(48.dp)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            listOf(Color(0xFFE5A93C), Color(0xFFF4C563), Color(0xFFC78824))
+                        ),
+                        shape = RoundedCornerShape(24.dp)
+                    ),
                 shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MtrxGold)
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
             ) {
                 Text(
                     text = "Install (${FileSizeFormatter.format(sizeBytes)})",
                     color = Color.Black,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
+                    fontSize = 15.sp,
+                    letterSpacing = 0.5.sp
                 )
             }
         }
