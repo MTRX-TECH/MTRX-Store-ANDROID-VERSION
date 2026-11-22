@@ -4,6 +4,7 @@ import android.content.Context
 import com.mtrx.store.core.HashVerifier
 import com.mtrx.store.domain.model.DownloadState
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +18,7 @@ import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,122 +44,150 @@ class ApkDownloader @Inject constructor(
             targetFile.delete()
         }
 
-        var streamInfo: Pair<java.io.InputStream, Long>? = null
+        // Emit 0% initial progress
+        emit(
+            DownloadState.Progress(
+                bytesDownloaded = 0L,
+                totalBytes = expectedSizeBytes,
+                progressFraction = 0f,
+                speedBytesPerSec = 0L
+            )
+        )
 
-        // Attempt 1: Try OkHttp
+        var downloadSuccess = false
+        var lastError: Exception? = null
+
+        // Strategy 1: OkHttp (HTTP/2 + HTTP/1.1 with automatic connection pooling and redirects)
         try {
             val request = Request.Builder()
                 .url(url)
+                .header("User-Agent", "Mozilla/5.0 (Android 12; Mobile) MTRXStore/1.0")
                 .header("Accept", "application/vnd.android.package-archive, application/octet-stream, */*")
-                .header("Connection", "close")
                 .build()
+
             val response = okHttpClient.newCall(request).execute()
             if (response.isSuccessful && response.body != null) {
                 val body = response.body!!
                 val length = if (body.contentLength() > 0) body.contentLength() else expectedSizeBytes
-                streamInfo = Pair(body.byteStream(), length)
-            }
-        } catch (_: Exception) {
-            // Fall back to direct HttpsURLConnection
-        }
-
-        // Attempt 2: Fallback to HttpsURLConnection with redirect handling
-        if (streamInfo == null) {
-            try {
-                streamInfo = openStreamWithRedirects(url, expectedSizeBytes)
-            } catch (e: Exception) {
-                targetFile.delete()
-                emit(DownloadState.Failed(e.message ?: "Failed to connect to download server"))
-                return@flow
-            }
-        }
-
-        try {
-            val (inputStream, totalBytes) = streamInfo
-            var bytesCopied = 0L
-            val buffer = ByteArray(64 * 1024)
-
-            // Emit initial progress immediately once connection is established
-            emit(
-                DownloadState.Progress(
-                    bytesDownloaded = 0L,
-                    totalBytes = totalBytes,
-                    progressFraction = 0f,
-                    speedBytesPerSec = 0L
-                )
-            )
-
-            val startTime = System.currentTimeMillis()
-            var lastUpdateTime = startTime
-            var bytesSinceLastUpdate = 0L
-            var currentSpeed = 0L
-
-            BufferedInputStream(inputStream, 64 * 1024).use { input ->
-                BufferedOutputStream(FileOutputStream(targetFile), 64 * 1024).use { output ->
-                    var bytes: Int
-                    while (input.read(buffer).also { bytes = it } != -1) {
-                        if (!currentCoroutineContext().isActive) {
-                            targetFile.delete()
-                            emit(DownloadState.Cancelled)
-                            return@flow
-                        }
-
-                        output.write(buffer, 0, bytes)
-                        bytesCopied += bytes
-                        bytesSinceLastUpdate += bytes
-
-                        val now = System.currentTimeMillis()
-                        val elapsed = now - lastUpdateTime
-                        if (elapsed >= 250) { // update progress ~4 times per second
-                            currentSpeed = (bytesSinceLastUpdate * 1000) / elapsed
-                            val fraction = if (totalBytes > 0) {
-                                (bytesCopied.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
-                            } else 0f
-
-                            emit(
-                                DownloadState.Progress(
-                                    bytesDownloaded = bytesCopied,
-                                    totalBytes = totalBytes,
-                                    progressFraction = fraction,
-                                    speedBytesPerSec = currentSpeed
-                                )
-                            )
-                            lastUpdateTime = now
-                            bytesSinceLastUpdate = 0L
-                        }
+                body.byteStream().use { stream ->
+                    copyStreamToFile(stream, length, targetFile) { progress ->
+                        emit(progress)
                     }
-                    output.flush()
                 }
+                response.close()
+                if (targetFile.exists() && targetFile.length() > 0) {
+                    downloadSuccess = true
+                }
+            } else {
+                throw IOException("Server returned HTTP ${response.code}")
             }
-
-            // Verification Stage: Validate File Size
-            if (expectedSizeBytes > 0 && targetFile.length() < (expectedSizeBytes * 0.9)) {
-                targetFile.delete()
-                emit(DownloadState.Failed("Downloaded file size mismatch (Expected $expectedSizeBytes, got ${targetFile.length()})"))
-                return@flow
-            }
-
-            // Verification Stage: Validate SHA-256 Hash
-            emit(DownloadState.VerifyingHash)
-            val isValidHash = HashVerifier.verify(targetFile, expectedSha256)
-            if (!isValidHash) {
-                targetFile.delete()
-                emit(DownloadState.Failed("Security verification failed: SHA-256 checksum mismatch. File rejected."))
-                return@flow
-            }
-
-            emit(DownloadState.Success(targetFile.absolutePath))
-
-        } catch (e: IOException) {
+        } catch (e: CancellationException) {
             targetFile.delete()
-            emit(DownloadState.Failed(e.message ?: "Network error during download"))
+            emit(DownloadState.Cancelled)
+            return@flow
         } catch (e: Exception) {
             targetFile.delete()
-            emit(DownloadState.Failed(e.message ?: "Unexpected error during download"))
+            lastError = e
         }
+
+        // Strategy 2: Fallback to direct HttpsURLConnection if Strategy 1 fails
+        if (!downloadSuccess) {
+            try {
+                val (inputStream, length) = openStreamWithRedirects(url, expectedSizeBytes)
+                inputStream.use { stream ->
+                    copyStreamToFile(stream, length, targetFile) { progress ->
+                        emit(progress)
+                    }
+                }
+                if (targetFile.exists() && targetFile.length() > 0) {
+                    downloadSuccess = true
+                }
+            } catch (e: CancellationException) {
+                targetFile.delete()
+                emit(DownloadState.Cancelled)
+                return@flow
+            } catch (e: Exception) {
+                targetFile.delete()
+                lastError = e
+            }
+        }
+
+        if (!downloadSuccess) {
+            targetFile.delete()
+            emit(DownloadState.Failed(lastError?.message ?: "Failed to download APK"))
+            return@flow
+        }
+
+        // Verification Stage: Validate File Size
+        if (expectedSizeBytes > 0 && targetFile.length() < (expectedSizeBytes * 0.9)) {
+            targetFile.delete()
+            emit(DownloadState.Failed("Downloaded file size mismatch (Expected $expectedSizeBytes, got ${targetFile.length()})"))
+            return@flow
+        }
+
+        // Verification Stage: Validate SHA-256 Hash
+        emit(DownloadState.VerifyingHash)
+        val isValidHash = HashVerifier.verify(targetFile, expectedSha256)
+        if (!isValidHash) {
+            targetFile.delete()
+            emit(DownloadState.Failed("Security verification failed: SHA-256 checksum mismatch. File rejected."))
+            return@flow
+        }
+
+        emit(DownloadState.Success(targetFile.absolutePath))
     }.flowOn(Dispatchers.IO)
 
-    private fun openStreamWithRedirects(initialUrl: String, expectedSizeBytes: Long): Pair<java.io.InputStream, Long> {
+    private suspend fun copyStreamToFile(
+        inputStream: InputStream,
+        totalBytes: Long,
+        targetFile: File,
+        emitProgress: suspend (DownloadState.Progress) -> Unit
+    ) {
+        val buffer = ByteArray(64 * 1024)
+        var bytesCopied = 0L
+        val startTime = System.currentTimeMillis()
+        var lastUpdateTime = startTime
+        var bytesSinceLastUpdate = 0L
+        var currentSpeed = 0L
+
+        BufferedInputStream(inputStream, 64 * 1024).use { input ->
+            BufferedOutputStream(FileOutputStream(targetFile), 64 * 1024).use { output ->
+                var bytes: Int
+                while (input.read(buffer).also { bytes = it } != -1) {
+                    if (!currentCoroutineContext().isActive) {
+                        throw CancellationException("Download cancelled")
+                    }
+
+                    output.write(buffer, 0, bytes)
+                    bytesCopied += bytes
+                    bytesSinceLastUpdate += bytes
+
+                    val now = System.currentTimeMillis()
+                    val elapsed = now - lastUpdateTime
+                    if (elapsed >= 250) { // update progress ~4 times per second
+                        currentSpeed = (bytesSinceLastUpdate * 1000) / elapsed
+                        val fraction = if (totalBytes > 0) {
+                            (bytesCopied.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
+                        } else 0f
+
+                        emitProgress(
+                            DownloadState.Progress(
+                                bytesDownloaded = bytesCopied,
+                                totalBytes = totalBytes,
+                                progressFraction = fraction,
+                                speedBytesPerSec = currentSpeed
+                            )
+                        )
+                        lastUpdateTime = now
+                        bytesSinceLastUpdate = 0L
+                    }
+                }
+                output.flush()
+            }
+        }
+    }
+
+    private fun openStreamWithRedirects(initialUrl: String, expectedSizeBytes: Long): Pair<InputStream, Long> {
         var currentUrl = initialUrl
         var redirects = 0
         while (redirects < 10) {
@@ -166,14 +196,13 @@ class ApkDownloader @Inject constructor(
             connection.instanceFollowRedirects = false
             connection.connectTimeout = 30000
             connection.readTimeout = 120000
-            connection.setRequestProperty("User-Agent", "MTRXStore/1.0 (Android)")
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android 12; Mobile) MTRXStore/1.0")
             connection.setRequestProperty("Accept", "application/vnd.android.package-archive, application/octet-stream, */*")
-            connection.setRequestProperty("Connection", "close")
 
             val responseCode = connection.responseCode
             if (responseCode in 300..399) {
                 val location = connection.getHeaderField("Location")
-                    ?: throw java.io.IOException("Redirect response $responseCode missing Location header")
+                    ?: throw IOException("Redirect response $responseCode missing Location header")
                 connection.disconnect()
                 currentUrl = location
                 redirects++
@@ -182,10 +211,10 @@ class ApkDownloader @Inject constructor(
                 val finalLen = if (lenHeader > 0) lenHeader else expectedSizeBytes
                 return Pair(connection.inputStream, finalLen)
             } else {
-                throw java.io.IOException("Server returned HTTP $responseCode: ${connection.responseMessage}")
+                throw IOException("Server returned HTTP $responseCode: ${connection.responseMessage}")
             }
         }
-        throw java.io.IOException("Too many redirects while downloading APK")
+        throw IOException("Too many redirects while downloading APK")
     }
 
     fun deleteCachedApk(packageName: String) {
