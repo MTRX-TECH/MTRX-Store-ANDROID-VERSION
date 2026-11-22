@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import com.mtrx.store.ui.components.AppIcon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -226,14 +227,12 @@ fun UpdateAppCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AsyncImage(
-                    model = app.iconUrl,
+                AppIcon(
+                    packageName = app.packageName,
+                    iconUrl = app.iconUrl,
                     contentDescription = app.name,
-                    modifier = Modifier
-                        .size(54.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MtrxDarkBorder),
-                    contentScale = ContentScale.Crop
+                    modifier = Modifier.size(54.dp),
+                    cornerRadius = 12.dp
                 )
 
                 Spacer(modifier = Modifier.width(14.dp))

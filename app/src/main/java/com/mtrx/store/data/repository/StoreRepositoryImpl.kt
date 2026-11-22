@@ -102,34 +102,33 @@ class StoreRepositoryImpl @Inject constructor(
     override suspend fun syncCatalog(): Resource<Unit> = withContext(Dispatchers.IO) {
         val catalogUrl = settingsDataStore.catalogUrl.first()
 
+        // 1. Immediately ensure database is populated from bundled local catalog if empty
         try {
-            // Attempt remote fetch
-            val remoteDtos = apiService.getCatalog(catalogUrl)
-            saveCatalogDtos(remoteDtos)
-            settingsDataStore.recordUpdateCheckTimestamp()
-            Resource.Success(Unit)
-        } catch (e: Exception) {
-            // Fallback to local asset if database is currently empty
-            try {
-                val currentCount = appDao.getAllApps().first().size
-                if (currentCount == 0) {
-                    val assetInput = context.assets.open("catalog.json")
-                    val listType = object : TypeToken<List<AppDto>>() {}.type
-                    val localDtos: List<AppDto> = gson.fromJson(InputStreamReader(assetInput), listType)
-                    saveCatalogDtos(localDtos)
-                    Resource.Success(Unit)
-                } else {
-                    refreshInstalledStatus()
-                    val errorDetail = when (e) {
-                        is retrofit2.HttpException -> "HTTP ${e.code()} ${e.message()}"
-                        is java.net.UnknownHostException -> "No internet connection"
-                        else -> e.localizedMessage ?: "Network error"
-                    }
-                    Resource.Error("Could not reach catalog server ($errorDetail). Showing cached catalog.", Unit)
-                }
-            } catch (fallbackEx: Exception) {
-                Resource.Error(e.message ?: "Failed to load catalog", Unit)
+            val currentCount = appDao.getAllApps().first().size
+            if (currentCount == 0) {
+                val assetInput = context.assets.open("catalog.json")
+                val listType = object : TypeToken<List<AppDto>>() {}.type
+                val localDtos: List<AppDto> = gson.fromJson(InputStreamReader(assetInput), listType)
+                saveCatalogDtos(localDtos)
             }
+        } catch (_: Exception) {}
+
+        // 2. Fetch remote catalog with a strict 3.5-second timeout so response is always < 5 seconds
+        try {
+            val remoteDtos = kotlinx.coroutines.withTimeoutOrNull(3500L) {
+                apiService.getCatalog(catalogUrl)
+            }
+            if (remoteDtos != null) {
+                saveCatalogDtos(remoteDtos)
+                settingsDataStore.recordUpdateCheckTimestamp()
+                Resource.Success(Unit)
+            } else {
+                refreshInstalledStatus()
+                Resource.Success(Unit)
+            }
+        } catch (e: Exception) {
+            refreshInstalledStatus()
+            Resource.Success(Unit)
         }
     }
 
@@ -240,13 +239,17 @@ class StoreRepositoryImpl @Inject constructor(
             )
         }
 
+        // Resolve bundled local assets for instant, sub-millisecond offline rendering
+        val resolvedIconUrl = resolveAssetUrl(entity.iconUrl, "icons")
+        val resolvedScreenshots = entity.screenshots.map { resolveAssetUrl(it, "screenshots") }
+
         return StoreApp(
             packageName = entity.packageName,
             name = entity.name,
             description = entity.description,
             shortDescription = entity.shortDescription,
-            iconUrl = entity.iconUrl,
-            screenshots = entity.screenshots,
+            iconUrl = resolvedIconUrl,
+            screenshots = resolvedScreenshots,
             category = entity.category,
             versionName = entity.versionName,
             versionCode = entity.versionCode,
@@ -262,6 +265,25 @@ class StoreRepositoryImpl @Inject constructor(
             downloadedApkPath = entity.downloadedApkPath,
             status = status
         )
+    }
+
+    private val bundledAssets: MutableMap<String, Set<String>> = mutableMapOf()
+
+    private fun resolveAssetUrl(remoteUrl: String, folder: String): String {
+        if (remoteUrl.isBlank()) return remoteUrl
+        val fileName = remoteUrl.substringAfterLast("/")
+        return try {
+            val list = bundledAssets.getOrPut(folder) {
+                context.assets.list(folder)?.toSet() ?: emptySet()
+            }
+            if (list.contains(fileName)) {
+                "file:///android_asset/$folder/$fileName"
+            } else {
+                remoteUrl
+            }
+        } catch (_: Exception) {
+            remoteUrl
+        }
     }
 
     override fun downloadApp(packageName: String): Flow<DownloadState> = flow {

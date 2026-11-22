@@ -60,9 +60,15 @@ object AppModule {
     @Provides
     @Singleton
     fun provideCatalogApiService(okHttpClient: OkHttpClient): CatalogApiService {
+        val catalogClient = okHttpClient.newBuilder()
+            .connectTimeout(3L, TimeUnit.SECONDS)
+            .readTimeout(4L, TimeUnit.SECONDS)
+            .callTimeout(5L, TimeUnit.SECONDS)
+            .build()
+
         return Retrofit.Builder()
             .baseUrl("https://raw.githubusercontent.com/")
-            .client(okHttpClient)
+            .client(catalogClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(CatalogApiService::class.java)

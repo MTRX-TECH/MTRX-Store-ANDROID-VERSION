@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import com.mtrx.store.ui.components.AppIcon
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -163,14 +164,12 @@ fun AppDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AsyncImage(
-                        model = app.iconUrl,
+                    AppIcon(
+                        packageName = app.packageName,
+                        iconUrl = app.iconUrl,
                         contentDescription = app.name,
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(MtrxDarkBorder),
-                        contentScale = ContentScale.Crop
+                        modifier = Modifier.size(80.dp),
+                        cornerRadius = 18.dp
                     )
 
                     Spacer(modifier = Modifier.width(18.dp))

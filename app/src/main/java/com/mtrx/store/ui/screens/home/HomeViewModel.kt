@@ -21,6 +21,7 @@ data class HomeUiState(
     val featuredApps: List<StoreApp> = emptyList(),
     val recentlyUpdatedApps: List<StoreApp> = emptyList(),
     val allApps: List<StoreApp> = emptyList(),
+    val appsWithUpdates: List<StoreApp> = emptyList(),
     val categories: List<String> = emptyList(),
     val selectedCategory: String = "All",
     val searchQuery: String = "",
@@ -91,12 +92,14 @@ class HomeViewModel @Inject constructor(
 
         val featured = appsWithDownloads.take(3)
         val recentlyUpdated = appsWithDownloads.sortedByDescending { it.updatedAt }.take(6)
+        val appsWithUpdates = appsWithDownloads.filter { it.status is AppStatus.UpdateAvailable }
         val fullCategories = listOf("All") + categories.filter { it.isNotBlank() }
 
         HomeUiState(
             featuredApps = featured,
             recentlyUpdatedApps = recentlyUpdated,
             allApps = filteredApps,
+            appsWithUpdates = appsWithUpdates,
             categories = fullCategories,
             selectedCategory = filter.selectedCategory,
             searchQuery = filter.searchQuery,

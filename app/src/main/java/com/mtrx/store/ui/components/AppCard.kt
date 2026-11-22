@@ -64,14 +64,12 @@ fun AppCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // App Icon
-                AsyncImage(
-                    model = app.iconUrl,
+                AppIcon(
+                    packageName = app.packageName,
+                    iconUrl = app.iconUrl,
                     contentDescription = app.name,
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF1B1C25)),
-                    contentScale = ContentScale.Crop
+                    modifier = Modifier.size(56.dp),
+                    cornerRadius = 14.dp
                 )
 
                 Spacer(modifier = Modifier.width(14.dp))
