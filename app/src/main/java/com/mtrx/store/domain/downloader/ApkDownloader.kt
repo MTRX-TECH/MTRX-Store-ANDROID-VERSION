@@ -42,31 +42,42 @@ class ApkDownloader @Inject constructor(
             targetFile.delete()
         }
 
-        val request = Request.Builder()
-            .url(url)
-            .header("Accept", "application/vnd.android.package-archive, application/octet-stream, */*")
-            .build()
+        var streamInfo: Pair<java.io.InputStream, Long>? = null
 
-        var call = okHttpClient.newCall(request)
+        // Attempt 1: Try OkHttp
+        try {
+            val request = Request.Builder()
+                .url(url)
+                .header("Accept", "application/vnd.android.package-archive, application/octet-stream, */*")
+                .header("Connection", "close")
+                .build()
+            val response = okHttpClient.newCall(request).execute()
+            if (response.isSuccessful && response.body != null) {
+                val body = response.body!!
+                val length = if (body.contentLength() > 0) body.contentLength() else expectedSizeBytes
+                streamInfo = Pair(body.byteStream(), length)
+            }
+        } catch (_: Exception) {
+            // Fall back to direct HttpsURLConnection
+        }
+
+        // Attempt 2: Fallback to HttpsURLConnection with redirect handling
+        if (streamInfo == null) {
+            try {
+                streamInfo = openStreamWithRedirects(url, expectedSizeBytes)
+            } catch (e: Exception) {
+                targetFile.delete()
+                emit(DownloadState.Failed(e.message ?: "Failed to connect to download server"))
+                return@flow
+            }
+        }
 
         try {
-            val response = call.execute()
-            if (!response.isSuccessful) {
-                emit(DownloadState.Failed("Server returned HTTP ${response.code}: ${response.message}"))
-                return@flow
-            }
-
-            val body = response.body
-            if (body == null) {
-                emit(DownloadState.Failed("Download body was empty"))
-                return@flow
-            }
-
-            val totalBytes = if (body.contentLength() > 0) body.contentLength() else expectedSizeBytes
+            val (inputStream, totalBytes) = streamInfo
             var bytesCopied = 0L
             val buffer = ByteArray(64 * 1024)
 
-            // Emit initial progress immediately once response headers arrive
+            // Emit initial progress immediately once connection is established
             emit(
                 DownloadState.Progress(
                     bytesDownloaded = 0L,
@@ -81,7 +92,7 @@ class ApkDownloader @Inject constructor(
             var bytesSinceLastUpdate = 0L
             var currentSpeed = 0L
 
-            BufferedInputStream(body.byteStream(), 64 * 1024).use { input ->
+            BufferedInputStream(inputStream, 64 * 1024).use { input ->
                 BufferedOutputStream(FileOutputStream(targetFile), 64 * 1024).use { output ->
                     var bytes: Int
                     while (input.read(buffer).also { bytes = it } != -1) {
@@ -145,6 +156,37 @@ class ApkDownloader @Inject constructor(
             emit(DownloadState.Failed(e.message ?: "Unexpected error during download"))
         }
     }.flowOn(Dispatchers.IO)
+
+    private fun openStreamWithRedirects(initialUrl: String, expectedSizeBytes: Long): Pair<java.io.InputStream, Long> {
+        var currentUrl = initialUrl
+        var redirects = 0
+        while (redirects < 10) {
+            val urlObj = java.net.URL(currentUrl)
+            val connection = urlObj.openConnection() as java.net.HttpURLConnection
+            connection.instanceFollowRedirects = false
+            connection.connectTimeout = 30000
+            connection.readTimeout = 120000
+            connection.setRequestProperty("User-Agent", "MTRXStore/1.0 (Android)")
+            connection.setRequestProperty("Accept", "application/vnd.android.package-archive, application/octet-stream, */*")
+            connection.setRequestProperty("Connection", "close")
+
+            val responseCode = connection.responseCode
+            if (responseCode in 300..399) {
+                val location = connection.getHeaderField("Location")
+                    ?: throw java.io.IOException("Redirect response $responseCode missing Location header")
+                connection.disconnect()
+                currentUrl = location
+                redirects++
+            } else if (responseCode in 200..299) {
+                val lenHeader = connection.contentLengthLong
+                val finalLen = if (lenHeader > 0) lenHeader else expectedSizeBytes
+                return Pair(connection.inputStream, finalLen)
+            } else {
+                throw java.io.IOException("Server returned HTTP $responseCode: ${connection.responseMessage}")
+            }
+        }
+        throw java.io.IOException("Too many redirects while downloading APK")
+    }
 
     fun deleteCachedApk(packageName: String) {
         val file = File(downloadDir, "$packageName.apk")

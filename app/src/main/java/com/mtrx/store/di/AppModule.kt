@@ -37,6 +37,7 @@ object AppModule {
             level = HttpLoggingInterceptor.Level.HEADERS
         }
         return OkHttpClient.Builder()
+            .protocols(listOf(okhttp3.Protocol.HTTP_1_1))
             .addInterceptor { chain ->
                 val original = chain.request()
                 val builder = original.newBuilder()
