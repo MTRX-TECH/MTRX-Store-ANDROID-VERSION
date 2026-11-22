@@ -81,8 +81,8 @@
     "versionName": "1.0.0",
     "versionCode": 1,
     "apkUrl": "https://github.com/MTRX-TECH/MTRX-Store-ANDROID-VERSION/releases/download/v1.0.0/MTRX-Store-v1.0.0.apk",
-    "sha256": "2b07f521b89e67f8589d600dc943e529fe1c09d371f26de4a940bf9af96029de",
-    "sizeBytes": 17805653,
+    "sha256": "6c86aeca13f60b726875dd79c9a39615d1fc355d9f8c5f0c76fd65fa793e00f1",
+    "sizeBytes": 17805673,
     "changelog": "\u2022 Official initial release of MTRX Store for Android\n\u2022 Material 3 UI with dark mode by default\n\u2022 PackageInstaller background downloads & SHA-256 validation",
     "minSdk": 26,
     "updatedAt": "2026-11-22T10:00:00Z"

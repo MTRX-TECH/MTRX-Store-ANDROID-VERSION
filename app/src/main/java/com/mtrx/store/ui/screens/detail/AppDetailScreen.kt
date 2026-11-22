@@ -1,5 +1,7 @@
 package com.mtrx.store.ui.screens.detail
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -80,6 +82,12 @@ fun AppDetailScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val uninstallLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        viewModel.refreshStatus()
+    }
+
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
             snackbarHostState.showSnackbar(error, duration = SnackbarDuration.Short)
@@ -113,7 +121,7 @@ fun AppDetailScreen(
                     if (app != null && app.isInstalled) {
                         IconButton(onClick = {
                             val uninstallIntent = viewModel.createUninstallIntent()
-                            context.startActivity(uninstallIntent)
+                            uninstallLauncher.launch(uninstallIntent)
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Delete,

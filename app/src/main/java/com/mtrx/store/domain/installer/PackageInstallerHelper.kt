@@ -169,10 +169,9 @@ class PackageInstallerHelper @Inject constructor(
      * Creates an uninstallation intent for a package.
      */
     fun createUninstallIntent(packageName: String): Intent {
-        return Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
-            data = Uri.parse("package:$packageName")
+        return Intent(Intent.ACTION_DELETE).apply {
+            data = Uri.fromParts("package", packageName, null)
             putExtra(Intent.EXTRA_RETURN_RESULT, true)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }
 }

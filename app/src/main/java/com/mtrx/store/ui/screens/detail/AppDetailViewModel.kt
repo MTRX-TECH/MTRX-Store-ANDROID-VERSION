@@ -142,4 +142,10 @@ class AppDetailViewModel @Inject constructor(
 
     fun createUninstallIntent() = repository.createUninstallIntent(packageName)
     fun getManageUnknownSourcesIntent() = repository.createManageUnknownAppSourcesIntent()
+
+    fun refreshStatus() {
+        viewModelScope.launch {
+            repository.refreshInstalledStatus()
+        }
+    }
 }

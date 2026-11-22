@@ -78,19 +78,21 @@ class StoreRepositoryImpl @Inject constructor(
     }
 
     override fun getInstalledApps(): Flow<List<StoreApp>> {
-        return appDao.getInstalledApps().map { entities ->
-            entities.map { mapEntityToDomain(it) }
+        return appDao.getAllApps().map { entities ->
+            entities.map { mapEntityToDomain(it) }.filter { it.isInstalled }
         }
     }
 
     override fun getAppsWithUpdates(): Flow<List<StoreApp>> {
-        return appDao.getAppsWithUpdates().map { entities ->
-            entities.map { mapEntityToDomain(it) }
+        return appDao.getAllApps().map { entities ->
+            entities.map { mapEntityToDomain(it) }.filter { it.status is AppStatus.UpdateAvailable }
         }
     }
 
     override fun getUpdatesCount(): Flow<Int> {
-        return appDao.getUpdatesCount()
+        return appDao.getAllApps().map { entities ->
+            entities.map { mapEntityToDomain(it) }.count { it.status is AppStatus.UpdateAvailable }
+        }
     }
 
     override fun getCategories(): Flow<List<String>> {
@@ -213,16 +215,28 @@ class StoreRepositoryImpl @Inject constructor(
     }
 
     private fun mapEntityToDomain(entity: AppEntity): StoreApp {
+        val installedInfo = getInstalledPackageInfo(entity.packageName)
+        val isCurrentlyInstalled = installedInfo != null
+        val installedCode = if (installedInfo != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                installedInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                installedInfo.versionCode.toLong()
+            }
+        } else 0L
+        val installedName = installedInfo?.versionName ?: ""
+
         val status: AppStatus = when {
-            !entity.isInstalled -> AppStatus.NotInstalled
-            entity.versionCode > entity.installedVersionCode -> AppStatus.UpdateAvailable(
-                installedVersionName = entity.installedVersionName,
+            !isCurrentlyInstalled -> AppStatus.NotInstalled
+            entity.versionCode > installedCode -> AppStatus.UpdateAvailable(
+                installedVersionName = installedName,
                 newVersionName = entity.versionName,
                 newVersionCode = entity.versionCode
             )
             else -> AppStatus.Installed(
-                versionName = entity.installedVersionName.ifEmpty { entity.versionName },
-                versionCode = entity.installedVersionCode
+                versionName = installedName.ifEmpty { entity.versionName },
+                versionCode = installedCode
             )
         }
 
@@ -242,9 +256,9 @@ class StoreRepositoryImpl @Inject constructor(
             changelog = entity.changelog,
             minSdk = entity.minSdk,
             updatedAt = entity.updatedAt,
-            isInstalled = entity.isInstalled,
-            installedVersionCode = entity.installedVersionCode,
-            installedVersionName = entity.installedVersionName,
+            isInstalled = isCurrentlyInstalled,
+            installedVersionCode = installedCode,
+            installedVersionName = installedName,
             downloadedApkPath = entity.downloadedApkPath,
             status = status
         )

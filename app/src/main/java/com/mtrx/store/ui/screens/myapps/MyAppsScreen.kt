@@ -1,5 +1,7 @@
 package com.mtrx.store.ui.screens.myapps
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -65,6 +67,12 @@ fun MyAppsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    val uninstallLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        viewModel.refresh()
+    }
 
     Scaffold(
         topBar = {
@@ -159,7 +167,7 @@ fun MyAppsScreen(
                         onOpenClick = { viewModel.launchApp(app.packageName) },
                         onUninstallClick = {
                             val intent = viewModel.createUninstallIntent(app.packageName)
-                            context.startActivity(intent)
+                            uninstallLauncher.launch(intent)
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
