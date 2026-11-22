@@ -44,7 +44,12 @@ class SettingsDataStore @Inject constructor(
     }
 
     val catalogUrl: Flow<String> = dataStore.data.map { preferences ->
-        preferences[KEY_CATALOG_URL] ?: Constants.DEFAULT_CATALOG_URL
+        val saved = preferences[KEY_CATALOG_URL]
+        if (saved.isNullOrBlank() || saved.contains("MarapathranGroups", ignoreCase = true)) {
+            Constants.DEFAULT_CATALOG_URL
+        } else {
+            saved
+        }
     }
 
     val updateIntervalHours: Flow<Long> = dataStore.data.map { preferences ->

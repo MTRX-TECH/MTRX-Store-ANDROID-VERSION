@@ -34,6 +34,13 @@ object AppModule {
             level = HttpLoggingInterceptor.Level.HEADERS
         }
         return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("User-Agent", "MTRXStore/1.0 (Android)")
+                    .header("Accept", "application/json, text/plain, */*")
+                    .build()
+                chain.proceed(request)
+            }
             .addInterceptor(logging)
             .connectTimeout(Constants.NETWORK_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(Constants.NETWORK_TIMEOUT_SECONDS, TimeUnit.SECONDS)

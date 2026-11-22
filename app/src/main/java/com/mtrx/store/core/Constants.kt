@@ -2,7 +2,7 @@ package com.mtrx.store.core
 
 object Constants {
     // Configurable default catalog raw URL
-    const val DEFAULT_CATALOG_URL = "https://raw.githubusercontent.com/MarapathranGroups/MTRX-Store-Catalog/main/catalog.json"
+    const val DEFAULT_CATALOG_URL = "https://raw.githubusercontent.com/MTRX-TECH/MTRX-Store-ANDROID-VERSION/main/catalog.json"
 
     // Network timeouts in seconds
     const val NETWORK_TIMEOUT_SECONDS = 30L

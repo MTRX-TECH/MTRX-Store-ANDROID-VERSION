@@ -118,7 +118,12 @@ class StoreRepositoryImpl @Inject constructor(
                     Resource.Success(Unit)
                 } else {
                     refreshInstalledStatus()
-                    Resource.Error("Could not reach catalog server. Showing cached catalog.", Unit)
+                    val errorDetail = when (e) {
+                        is retrofit2.HttpException -> "HTTP ${e.code()} ${e.message()}"
+                        is java.net.UnknownHostException -> "No internet connection"
+                        else -> e.localizedMessage ?: "Network error"
+                    }
+                    Resource.Error("Could not reach catalog server ($errorDetail). Showing cached catalog.", Unit)
                 }
             } catch (fallbackEx: Exception) {
                 Resource.Error(e.message ?: "Failed to load catalog", Unit)
