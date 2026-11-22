@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -42,6 +44,7 @@ class ApkDownloader @Inject constructor(
 
         val request = Request.Builder()
             .url(url)
+            .header("Accept", "application/vnd.android.package-archive, application/octet-stream, */*")
             .build()
 
         var call = okHttpClient.newCall(request)
@@ -61,15 +64,25 @@ class ApkDownloader @Inject constructor(
 
             val totalBytes = if (body.contentLength() > 0) body.contentLength() else expectedSizeBytes
             var bytesCopied = 0L
-            val buffer = ByteArray(8192)
+            val buffer = ByteArray(64 * 1024)
+
+            // Emit initial progress immediately once response headers arrive
+            emit(
+                DownloadState.Progress(
+                    bytesDownloaded = 0L,
+                    totalBytes = totalBytes,
+                    progressFraction = 0f,
+                    speedBytesPerSec = 0L
+                )
+            )
 
             val startTime = System.currentTimeMillis()
             var lastUpdateTime = startTime
             var bytesSinceLastUpdate = 0L
             var currentSpeed = 0L
 
-            body.byteStream().use { input ->
-                FileOutputStream(targetFile).use { output ->
+            BufferedInputStream(body.byteStream(), 64 * 1024).use { input ->
+                BufferedOutputStream(FileOutputStream(targetFile), 64 * 1024).use { output ->
                     var bytes: Int
                     while (input.read(buffer).also { bytes = it } != -1) {
                         if (!currentCoroutineContext().isActive) {
@@ -84,7 +97,7 @@ class ApkDownloader @Inject constructor(
 
                         val now = System.currentTimeMillis()
                         val elapsed = now - lastUpdateTime
-                        if (elapsed >= 300) { // update progress ~3 times per second
+                        if (elapsed >= 250) { // update progress ~4 times per second
                             currentSpeed = (bytesSinceLastUpdate * 1000) / elapsed
                             val fraction = if (totalBytes > 0) {
                                 (bytesCopied.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)

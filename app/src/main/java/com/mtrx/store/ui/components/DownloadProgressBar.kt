@@ -24,21 +24,31 @@ fun DownloadProgressBar(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        LinearProgressIndicator(
-            progress = { progressFraction },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp),
-            color = MtrxGold,
-            trackColor = MaterialTheme.colorScheme.outline
-        )
+        if (progressFraction <= 0f) {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp),
+                color = MtrxGold,
+                trackColor = MaterialTheme.colorScheme.outline
+            )
+        } else {
+            LinearProgressIndicator(
+                progress = { progressFraction },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp),
+                color = MtrxGold,
+                trackColor = MaterialTheme.colorScheme.outline
+            )
+        }
 
         Spacer(modifier = Modifier.height(4.dp))
 
         Row(modifier = Modifier.fillMaxWidth()) {
             val percent = (progressFraction * 100).toInt()
             Text(
-                text = "$percent% • ${FileSizeFormatter.format(bytesDownloaded)} / ${FileSizeFormatter.format(totalBytes)}",
+                text = if (progressFraction <= 0f) "Connecting to server..." else "$percent% • ${FileSizeFormatter.format(bytesDownloaded)} / ${FileSizeFormatter.format(totalBytes)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.sp

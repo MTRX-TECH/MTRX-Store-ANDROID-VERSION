@@ -75,6 +75,13 @@ class UpdatesViewModel @Inject constructor(
     }
 
     private fun startDownloadAndInstall(packageName: String) {
+        // Instant visual feedback: Show loading animation immediately on first click
+        _activeDownloads.value = _activeDownloads.value + (packageName to AppStatus.Downloading(
+            progressFraction = 0f,
+            speedText = "Connecting...",
+            bytesText = "Starting..."
+        ))
+
         viewModelScope.launch {
             repository.downloadApp(packageName).collect { state ->
                 when (state) {

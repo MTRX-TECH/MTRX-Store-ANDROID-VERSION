@@ -57,76 +57,20 @@ class PackageInstallerHelper @Inject constructor(
     }
 
     /**
-     * Installs an APK using Android's native PackageInstaller session.
+     * Installs an APK immediately via system PackageInstaller FileProvider Intent.
+     * This eliminates session streaming latency, MIUI security intercept delays,
+     * and background broadcast restrictions, prompting the user immediately with 0 delay.
      */
     suspend fun installApk(apkFile: File, targetPackageName: String): Result<Unit> = withContext(Dispatchers.IO) {
         if (!apkFile.exists()) {
             return@withContext Result.failure(IllegalArgumentException("APK file not found: ${apkFile.path}"))
         }
 
-        val packageInstaller = packageManager.packageInstaller
-        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
-            setSize(apkFile.length())
-            setAppPackageName(targetPackageName)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
-            }
-        }
-
-        var sessionId = -1
-        try {
-            sessionId = packageInstaller.createSession(params)
-            val session = packageInstaller.openSession(sessionId)
-
-            session.use { activeSession ->
-                FileInputStream(apkFile).use { input: InputStream ->
-                    activeSession.openWrite(targetPackageName, 0, apkFile.length()).use { output: OutputStream ->
-                        val buffer = ByteArray(65536)
-                        var bytesRead: Int
-                        while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
-                        }
-                        activeSession.fsync(output)
-                    }
-                }
-
-                // Create callback PendingIntent targeted at InstallResultReceiver
-                val intent = Intent(context, InstallResultReceiver::class.java).apply {
-                    action = Constants.ACTION_INSTALL_STATUS
-                    putExtra(Constants.EXTRA_PACKAGE_NAME, targetPackageName)
-                    putExtra("apk_path", apkFile.absolutePath)
-                }
-
-                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-                } else {
-                    PendingIntent.FLAG_UPDATE_CURRENT
-                }
-
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    sessionId,
-                    intent,
-                    flags
-                )
-
-                activeSession.commit(pendingIntent.intentSender)
-            }
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            if (sessionId != -1) {
-                try {
-                    packageInstaller.abandonSession(sessionId)
-                } catch (_: Exception) {}
-            }
-            // Fallback to FileProvider intent installation if session creation is restricted
-            installViaIntent(apkFile)
-        }
+        installViaIntent(apkFile)
     }
 
     /**
-     * Fallback installation via standard View Intent with FileProvider
+     * Direct installation via standard View Intent with FileProvider
      */
     private fun installViaIntent(apkFile: File): Result<Unit> {
         return try {

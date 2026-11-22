@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -36,19 +37,29 @@ class AppDetailViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     private val _showPermissionDialog = MutableStateFlow(false)
     private val _downloadStatus = MutableStateFlow<AppStatus.Downloading?>(null)
+    private val _isInstalling = MutableStateFlow(false)
     private var downloadJob: Job? = null
 
     val uiState: StateFlow<AppDetailUiState> = combine(
         repository.getApp(packageName),
         _errorMessage,
         _showPermissionDialog,
-        _downloadStatus
-    ) { app, error, permDialog, dlStatus ->
+        _downloadStatus,
+        _isInstalling
+    ) { app, error, permDialog, dlStatus, isInstalling ->
 
-        val updatedApp = if (app != null && dlStatus != null) {
-            app.copy(status = dlStatus)
+        val updatedApp = if (app != null) {
+            when {
+                isInstalling && !app.isInstalled -> app.copy(status = AppStatus.Installing)
+                dlStatus != null -> app.copy(status = dlStatus)
+                else -> app
+            }
         } else {
             app
+        }
+
+        if (app?.isInstalled == true && _isInstalling.value) {
+            _isInstalling.value = false
         }
 
         AppDetailUiState(
@@ -80,33 +91,43 @@ class AppDetailViewModel @Inject constructor(
     private fun startDownload() {
         if (downloadJob != null && downloadJob?.isActive == true) return
 
+        // Instant visual feedback: Show loading state immediately on first click
+        _downloadStatus.value = AppStatus.Downloading(
+            progressFraction = 0f,
+            speedText = "Connecting...",
+            bytesText = "Starting..."
+        )
+
         downloadJob = viewModelScope.launch {
             repository.downloadApp(packageName).collect { state ->
                 when (state) {
                     is DownloadState.Progress -> {
                         _downloadStatus.value = AppStatus.Downloading(
                             progressFraction = state.progressFraction,
-                            speedText = "${state.speedBytesPerSec / 1024} KB/s",
+                            speedText = if (state.speedBytesPerSec > 0) "${state.speedBytesPerSec / 1024} KB/s" else "Downloading...",
                             bytesText = "${state.bytesDownloaded / 1024 / 1024} MB / ${state.totalBytes / 1024 / 1024} MB"
                         )
                     }
                     is DownloadState.VerifyingHash -> {
                         _downloadStatus.value = AppStatus.Downloading(
                             progressFraction = 1f,
-                            speedText = "Verifying SHA-256...",
+                            speedText = "Verifying package...",
                             bytesText = ""
                         )
                     }
                     is DownloadState.Success -> {
                         _downloadStatus.value = null
+                        _isInstalling.value = true
                         triggerInstall()
                     }
                     is DownloadState.Failed -> {
                         _downloadStatus.value = null
+                        _isInstalling.value = false
                         _errorMessage.value = "Download failed: ${state.error}"
                     }
                     is DownloadState.Cancelled -> {
                         _downloadStatus.value = null
+                        _isInstalling.value = false
                     }
                 }
             }
@@ -115,6 +136,7 @@ class AppDetailViewModel @Inject constructor(
 
     private fun triggerInstall() {
         if (!repository.canRequestPackageInstalls()) {
+            _isInstalling.value = false
             _showPermissionDialog.value = true
             return
         }
@@ -122,6 +144,7 @@ class AppDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val result = repository.installApp(packageName)
             if (result.isFailure) {
+                _isInstalling.value = false
                 _errorMessage.value = "Installation failed: ${result.exceptionOrNull()?.message}"
             }
         }
@@ -146,6 +169,10 @@ class AppDetailViewModel @Inject constructor(
     fun refreshStatus() {
         viewModelScope.launch {
             repository.refreshInstalledStatus()
+            val currentApp = repository.getApp(packageName).first()
+            if (currentApp?.isInstalled == true) {
+                _isInstalling.value = false
+            }
         }
     }
 }

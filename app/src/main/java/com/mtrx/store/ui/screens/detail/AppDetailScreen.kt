@@ -440,13 +440,41 @@ fun PrimaryActionButton(
         }
 
         is AppStatus.Downloading -> {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                DownloadProgressBar(
-                    bytesDownloaded = (status.progressFraction * sizeBytes).toLong(),
-                    totalBytes = sizeBytes,
-                    progressFraction = status.progressFraction,
-                    speedBytesPerSec = 0L
-                )
+            if (status.progressFraction <= 0f) {
+                Button(
+                    onClick = {},
+                    enabled = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        disabledContainerColor = MtrxDarkCard,
+                        disabledContentColor = Color.White
+                    )
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MtrxGold,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = if (status.speedText.isNotBlank()) status.speedText else "Connecting to server...",
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp
+                    )
+                }
+            } else {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    DownloadProgressBar(
+                        bytesDownloaded = (status.progressFraction * sizeBytes).toLong(),
+                        totalBytes = sizeBytes,
+                        progressFraction = status.progressFraction,
+                        speedBytesPerSec = 0L
+                    )
+                }
             }
         }
 

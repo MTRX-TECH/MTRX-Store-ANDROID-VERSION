@@ -207,12 +207,20 @@ fun ActionButton(
                     .background(MtrxDarkBorder, RoundedCornerShape(18.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    progress = { status.progressFraction },
-                    modifier = Modifier.size(24.dp),
-                    color = MtrxGold,
-                    strokeWidth = 2.5.dp
-                )
+                if (status.progressFraction <= 0f) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = MtrxGold,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        progress = { status.progressFraction },
+                        modifier = Modifier.size(24.dp),
+                        color = MtrxGold,
+                        strokeWidth = 2.5.dp
+                    )
+                }
             }
         }
 
@@ -224,8 +232,8 @@ fun ActionButton(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = StatusBlue,
+                    modifier = Modifier.size(22.dp),
+                    color = MtrxGold,
                     strokeWidth = 2.dp
                 )
             }
