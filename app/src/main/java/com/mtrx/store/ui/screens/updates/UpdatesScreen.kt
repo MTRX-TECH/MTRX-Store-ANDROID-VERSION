@@ -2,6 +2,7 @@ package com.mtrx.store.ui.screens.updates
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -144,9 +145,14 @@ fun UpdatesScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 12.dp)
+                        ) {
                             Text(
                                 text = "${uiState.appsWithUpdates.size} Updates Available",
                                 style = MaterialTheme.typography.titleMedium,
@@ -160,13 +166,12 @@ fun UpdatesScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.weight(1f))
-
                         Button(
                             onClick = { viewModel.onUpdateAllClick() },
                             colors = ButtonDefaults.buttonColors(containerColor = StatusOrange),
                             shape = RoundedCornerShape(20.dp),
-                            enabled = !uiState.isUpdatingAll
+                            enabled = !uiState.isUpdatingAll,
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Download,
@@ -179,7 +184,9 @@ fun UpdatesScreen(
                                 text = "Update All",
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }

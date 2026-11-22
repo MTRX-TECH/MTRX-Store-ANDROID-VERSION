@@ -205,7 +205,7 @@ fun InstalledAppCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = app.name,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -224,18 +224,20 @@ fun InstalledAppCard(
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
 
             OutlinedButton(
                 onClick = onOpenClick,
                 shape = RoundedCornerShape(20.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, StatusGreen)
+                border = androidx.compose.foundation.BorderStroke(1.dp, StatusGreen),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier.height(34.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = "Open",
                     tint = StatusGreen,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(14.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
@@ -246,13 +248,15 @@ fun InstalledAppCard(
                 )
             }
 
-            Spacer(modifier = Modifier.width(6.dp))
-
-            IconButton(onClick = onUninstallClick) {
+            IconButton(
+                onClick = onUninstallClick,
+                modifier = Modifier.size(36.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Uninstall",
-                    tint = StatusRed.copy(alpha = 0.8f)
+                    tint = StatusRed.copy(alpha = 0.8f),
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
