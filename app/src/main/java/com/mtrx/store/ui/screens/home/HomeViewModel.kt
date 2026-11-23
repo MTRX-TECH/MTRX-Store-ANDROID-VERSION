@@ -82,7 +82,13 @@ class HomeViewModel @Inject constructor(
         }
 
         val filteredApps = appsWithDownloads.filter { app ->
-            val matchesCategory = filter.selectedCategory == "All" || app.category.equals(filter.selectedCategory, ignoreCase = true)
+            val matchesCategory = when (filter.selectedCategory) {
+                "All" -> true
+                "Apps" -> !app.category.equals("Games", ignoreCase = true)
+                "Games" -> app.category.equals("Games", ignoreCase = true)
+                "Category" -> true
+                else -> app.category.equals(filter.selectedCategory, ignoreCase = true)
+            }
             val matchesQuery = filter.searchQuery.isBlank() ||
                     app.name.contains(filter.searchQuery, ignoreCase = true) ||
                     app.shortDescription.contains(filter.searchQuery, ignoreCase = true) ||

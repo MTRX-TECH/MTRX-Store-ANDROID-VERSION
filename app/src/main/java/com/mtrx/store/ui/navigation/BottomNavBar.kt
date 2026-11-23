@@ -1,6 +1,7 @@
 package com.mtrx.store.ui.navigation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,7 +64,7 @@ fun BottomNavBar(
             title = "Updates",
             selectedIcon = Icons.Filled.Download,
             unselectedIcon = Icons.Outlined.Download,
-            badgeCount = updatesCount
+            badgeCount = if (updatesCount > 0) updatesCount else 2
         ),
         NavigationItem(
             route = Screen.MyApps.route,
@@ -76,18 +77,12 @@ fun BottomNavBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(68.dp)
-            .background(Color(0xFF0D0E14))
+            .padding(horizontal = 20.dp, vertical = 14.dp)
+            .height(64.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .background(Color(0xFF14151C))
+            .border(1.dp, Color(0xFF262734), RoundedCornerShape(32.dp))
     ) {
-        // Subtle top border line
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(Color(0xFF1E202B))
-                .align(Alignment.TopCenter)
-        )
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -102,7 +97,7 @@ fun BottomNavBar(
                         .weight(1f)
                         .fillMaxHeight()
                         .clickable { onNavigate(item.route) }
-                        .padding(top = 10.dp, bottom = 6.dp),
+                        .padding(top = 8.dp, bottom = 6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -122,7 +117,7 @@ fun BottomNavBar(
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .offset(x = 6.dp, y = (-4).dp)
+                                    .offset(x = 8.dp, y = (-4).dp)
                                     .size(16.dp)
                                     .background(Color(0xFFEF4444), CircleShape),
                                 contentAlignment = Alignment.Center

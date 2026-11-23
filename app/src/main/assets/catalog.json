@@ -81,8 +81,8 @@
     "versionName": "1.0.1",
     "versionCode": 2,
     "apkUrl": "https://github.com/MTRX-TECH/MTRX-Store-ANDROID-VERSION/releases/download/v1.0.1/MTRX-Store-v1.0.1.apk",
-    "sha256": "a2baf434b28c3f5e3a0dc85d21fbd72f63d858015999617bbb496c2d4c47fa7c",
-    "sizeBytes": 18634845,
+    "sha256": "02f8b3847d408753bac6f01b46271f18cbeee35b68d7020d5347a88fc707f587",
+    "sizeBytes": 18634877,
     "changelog": "• Luxury Obsidian Gold design & instant app logo resolution\n• Resilient HTTP/2 streaming downloader with zero-delay installation\n• Dynamic real catalog metadata without mock values",
     "minSdk": 26,
     "updatedAt": "2026-11-23T03:30:00Z"
