@@ -133,6 +133,12 @@ class StoreRepositoryImpl @Inject constructor(
     }
 
     private suspend fun saveCatalogDtos(dtos: List<AppDto>) {
+        if (dtos.isEmpty()) return
+        
+        // Ensure ONLY apps present in the catalog exist in the database
+        val catalogPackages = dtos.map { it.packageName }
+        appDao.deleteAppsNotIn(catalogPackages)
+
         val entities = dtos.map { dto ->
             val installedInfo = getInstalledPackageInfo(dto.packageName)
             val isInstalled = installedInfo != null

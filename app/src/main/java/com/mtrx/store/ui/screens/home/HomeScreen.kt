@@ -263,7 +263,7 @@ fun HomeScreen(
 
             // 3. Category Tabs
             item {
-                val displayCategories = listOf("All", "Apps", "Games", "Category")
+                val displayCategories = if (uiState.categories.isNotEmpty()) uiState.categories else listOf("All")
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -417,10 +417,10 @@ fun HomeScreen(
                 }
             }
 
-            // 6. "Updates Available" Section
-            if (uiState.searchQuery.isEmpty() && uiState.selectedCategory == "All") {
+            // 6. "Updates Available" Section - Show ONLY when real catalog updates exist
+            if (uiState.searchQuery.isEmpty() && uiState.selectedCategory == "All" && uiState.appsWithUpdates.isNotEmpty()) {
                 item {
-                    val updateApp = uiState.appsWithUpdates.firstOrNull()
+                    val updateApp = uiState.appsWithUpdates.first()
                     val updatesCount = uiState.appsWithUpdates.size
 
                     Column(modifier = Modifier.padding(top = 10.dp)) {
@@ -453,7 +453,7 @@ fun HomeScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = if (updatesCount > 0) updatesCount.toString() else "2",
+                                        text = updatesCount.toString(),
                                         color = Color.Black,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 11.sp
@@ -481,7 +481,7 @@ fun HomeScreen(
                             }
                         }
 
-                        // App / System Update Card
+                        // App Update Card from Catalog
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -505,41 +505,28 @@ fun HomeScreen(
                                         .border(1.dp, Color(0xFF2A2B38), RoundedCornerShape(12.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    if (updateApp != null) {
-                                        AppIcon(
-                                            packageName = updateApp.packageName,
-                                            iconUrl = updateApp.iconUrl,
-                                            contentDescription = updateApp.name,
-                                            modifier = Modifier.fillMaxSize(),
-                                            cornerRadius = 12.dp
-                                        )
-                                    } else {
-                                        Icon(
-                                            imageVector = Icons.Filled.Settings,
-                                            contentDescription = "System Update",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
+                                    AppIcon(
+                                        packageName = updateApp.packageName,
+                                        iconUrl = updateApp.iconUrl,
+                                        contentDescription = updateApp.name,
+                                        modifier = Modifier.fillMaxSize(),
+                                        cornerRadius = 12.dp
+                                    )
                                 }
 
                                 Spacer(modifier = Modifier.width(14.dp))
 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = updateApp?.name ?: "System Update",
+                                        text = updateApp.name,
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = if (updateApp != null) {
-                                            if (updateApp.changelog.isNotBlank()) updateApp.changelog.lines().first()
-                                            else updateApp.shortDescription.ifEmpty { "Update available" }
-                                        } else {
-                                            "Performance improvements and security patches."
-                                        },
+                                        text = if (updateApp.changelog.isNotBlank()) updateApp.changelog.lines().first()
+                                        else updateApp.shortDescription.ifEmpty { "Update available" },
                                         color = Color(0xFF8E8E98),
                                         fontSize = 12.sp,
                                         maxLines = 1,
@@ -547,11 +534,7 @@ fun HomeScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = if (updateApp != null) {
-                                            "${FileSizeFormatter.format(updateApp.sizeBytes)} • v${updateApp.versionName}"
-                                        } else {
-                                            "256 MB • Android 13"
-                                        },
+                                        text = "${FileSizeFormatter.format(updateApp.sizeBytes)} • v${updateApp.versionName}",
                                         color = Color(0xFF6B6E7E),
                                         fontSize = 11.sp
                                     )
@@ -560,13 +543,7 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
 
                                 Button(
-                                    onClick = {
-                                        if (updateApp != null) {
-                                            viewModel.onAppActionClick(updateApp)
-                                        } else {
-                                            onNavigateToUpdates()
-                                        }
-                                    },
+                                    onClick = { viewModel.onAppActionClick(updateApp) },
                                     shape = RoundedCornerShape(18.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                                     contentPadding = PaddingValues(0.dp),
@@ -712,7 +689,7 @@ fun FeaturedHeroCard(
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // Row 1: App Icon + Title & Tagline
+                // Row 1: App Icon + Title & Tagline directly from Catalog
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -725,12 +702,12 @@ fun FeaturedHeroCard(
                             .border(1.dp, Color(0xFF2E2B24), RoundedCornerShape(18.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.mtrx_logo_mark),
-                            contentDescription = "MTRX Suite",
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                        AppIcon(
+                            packageName = app.packageName,
+                            iconUrl = app.iconUrl,
+                            contentDescription = app.name,
+                            modifier = Modifier.fillMaxSize(),
+                            cornerRadius = 18.dp
                         )
                     }
 
@@ -738,7 +715,7 @@ fun FeaturedHeroCard(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "MTRX Suite",
+                            text = app.name,
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 19.sp,
@@ -747,7 +724,7 @@ fun FeaturedHeroCard(
                         )
                         Spacer(modifier = Modifier.height(3.dp))
                         Text(
-                            text = "Powering Your Digital Life",
+                            text = app.shortDescription.ifEmpty { app.description },
                             color = Color(0xFF9E9EA8),
                             fontSize = 13.sp,
                             maxLines = 1,
@@ -758,33 +735,26 @@ fun FeaturedHeroCard(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Row 2: Ratings/Downloads on left, Gold Pill INSTALL Button on right
+                // Row 2: Category & Version on left, Action Button on right
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = MtrxGold,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "4.8",
+                            text = app.category,
                             color = MtrxGold,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
+                            fontSize = 12.5.sp
                         )
                         Text(
-                            text = "  |  ",
+                            text = "  •  ",
                             color = Color(0xFF5A5D6E),
                             fontSize = 12.sp
                         )
                         Text(
-                            text = "10M+ Downloads",
+                            text = "v${app.versionName} (${FileSizeFormatter.format(app.sizeBytes)})",
                             color = Color(0xFF9E9EA8),
                             fontSize = 12.sp,
                             maxLines = 1
@@ -907,13 +877,7 @@ fun RecentlyAddedCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = when (app.packageName) {
-                    "com.mtrx.office.text" -> "MTRX Office"
-                    "com.mtrx.office.grid" -> "MTRX Grid"
-                    "com.mtrx.office.vision" -> "MTRX Vision"
-                    "com.mtrx.store" -> "MTRX Store"
-                    else -> app.name
-                },
+                text = app.name,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.5.sp,
@@ -931,39 +895,14 @@ fun RecentlyAddedCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = null,
-                    tint = MtrxGold,
-                    modifier = Modifier.size(11.dp)
-                )
-                Spacer(modifier = Modifier.width(3.dp))
-                Text(
-                    text = when (app.packageName) {
-                        "com.mtrx.office.text" -> "4.9"
-                        "com.mtrx.office.grid" -> "4.8"
-                        "com.mtrx.office.vision" -> "4.7"
-                        else -> "4.8"
-                    },
-                    color = MtrxGold,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp
-                )
-                Spacer(modifier = Modifier.width(5.dp))
-                Text(
-                    text = when (app.packageName) {
-                        "com.mtrx.office.text" -> "50M+"
-                        "com.mtrx.office.grid" -> "20M+"
-                        "com.mtrx.office.vision" -> "30M+"
-                        else -> "10M+"
-                    },
-                    color = Color(0xFF8A8D9F),
-                    fontSize = 11.sp
-                )
-            }
+            Text(
+                text = "v${app.versionName}",
+                color = MtrxGold,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 10.5.sp
+            )
         }
     }
 }

@@ -55,6 +55,9 @@ interface AppDao {
     @Query("SELECT COUNT(*) FROM apps WHERE isInstalled = 1 AND versionCode > installedVersionCode")
     fun getUpdatesCount(): Flow<Int>
 
+    @Query("DELETE FROM apps WHERE packageName NOT IN (:packageNames)")
+    suspend fun deleteAppsNotIn(packageNames: List<String>)
+
     @Query("DELETE FROM apps")
     suspend fun clearAll()
 }
